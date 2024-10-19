@@ -37,27 +37,25 @@ export default function Home({ initialTasks }: { initialTasks: Task[] }) {
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [intialLoad, setIntialLoad] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      const storedTasks = localStorage.getItem("tasks");
+    const storedTasks = localStorage.getItem("tasks");
 
-      if (storedTasks) {
-        const parsedTasks = JSON.parse(storedTasks);
-        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
-          setTasks(parsedTasks);
-        } else {
-          setTasks(initialTasks);
-        }
-      }
+    if (storedTasks && JSON.parse(storedTasks).length > 0) {
+      setTasks(JSON.parse(storedTasks));
     } else {
       setTasks(initialTasks);
     }
-  }, [initialTasks]);
+
+    setIntialLoad(false);
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    if (!intialLoad) {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+  }, [tasks, intialLoad]);
 
   const addTask = (newTask: Task) => {
     if (editingTask) {
