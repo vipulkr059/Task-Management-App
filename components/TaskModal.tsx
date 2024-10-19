@@ -76,8 +76,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
           />
           <select
             value={taskData.priority}
-            onChange={(e) =>
-              setTaskData({ ...taskData, priority: e.target.value })
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setTaskData({
+                ...taskData,
+                priority: e.target.value as "high" | "medium" | "low",
+              })
             }
             className="w-full p-2 mb-4 border rounded bg-gray-950"
           >
