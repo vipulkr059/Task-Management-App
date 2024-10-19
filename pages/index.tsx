@@ -1,115 +1,144 @@
-import Image from "next/image";
-import localFont from "next/font/local";
+import SearchBar from "@/components/SearchBar";
+import TaskList from "@/components/TaskList";
+import TaskModal from "@/components/TaskModal";
+import { Task } from "@/types";
+import { useState, useEffect } from "react";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+export async function getServerSideProps() {
+  const tasks = [
+    {
+      id: 1,
+      title: "Study",
+      description: "Module 1 need to be completed",
+      priority: "medium",
+      completed: false,
+    },
+    {
+      id: 2,
+      title: "Complete Assignment",
+      description: "Finish NextJS project",
+      priority: "high",
+      completed: false,
+    },
+    {
+      id: 3,
+      title: "Go for a walk",
+      description: "30-minute walk in the park",
+      priority: "low",
+      completed: false,
+    },
+  ];
 
-export default function Home() {
+  return { props: { initialTasks: tasks } };
+}
+
+export default function Home({ initialTasks }: { initialTasks: Task[] }) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      const storedTasks = localStorage.getItem("tasks");
+
+      if (storedTasks) {
+        const parsedTasks = JSON.parse(storedTasks);
+        if (Array.isArray(parsedTasks) && parsedTasks.length > 0) {
+          setTasks(parsedTasks);
+        } else {
+          setTasks(initialTasks);
+        }
+      }
+    } else {
+      setTasks(initialTasks);
+    }
+  }, [initialTasks]);
+
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  const addTask = (newTask: Task) => {
+    if (editingTask) {
+      updateTask(newTask);
+    } else {
+      setTasks([newTask, ...tasks]);
+    }
+    setEditingTask(null);
+  };
+
+  const updateTask = (updatedTask: Task) => {
+    setTasks(
+      tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task))
+    );
+  };
+
+  const deleteTask = (taskId: number) => {
+    setTasks(tasks.filter((task) => task.id !== taskId));
+  };
+
+  const toggleCompleted = (taskId: number) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  const openEditModal = (task: Task) => {
+    setEditingTask(task);
+    setModalOpen(true);
+  };
+
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-neutral-950 flex p-8">
+      <div className="w-full bg-neutral-900 p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="md:block hidden text-2xl font-bold">
+            {" "}
+            <span className="underline underline-offset-8 decoration-green-500">
+              {" "}
+              Task
+            </span>{" "}
+            Manager
+          </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          <SearchBar
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+          <button
+            onClick={() => {
+              setModalOpen(true);
+              setEditingTask(null);
+            }}
+            className="bg-blue-500 text-white p-4 rounded-full w-5 h-5 flex items-center justify-center font-semibold text-xl"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            +
+          </button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={() => setModalOpen(false)}
+          onSubmit={addTask}
+          editingTask={editingTask}
+        />
+
+        <TaskList
+          tasks={filteredTasks}
+          onEdit={openEditModal}
+          onDelete={deleteTask}
+          onToggleCompleted={toggleCompleted}
+        />
+      </div>
     </div>
   );
 }
